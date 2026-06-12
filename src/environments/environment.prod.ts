@@ -6,6 +6,7 @@ export const environment = {
   production: true,
   apiUrl: 'https://motostore-api-749765863620.southamerica-east1.run.app',
   useEmulators: false,
+  emulators: { authPort: 9099, firestorePort: 8082, storagePort: 9199 },
   firebase: {
     apiKey: 'AIzaSyBNylqVfSm9_ofvWAlj3DyIgcGncUsR6-k',
     authDomain: 'hdlizana.firebaseapp.com',
