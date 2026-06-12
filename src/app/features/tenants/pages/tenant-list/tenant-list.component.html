@@ -1,0 +1,360 @@
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-title-group">
+    <h1 class="page-title">Tenants</h1>
+    <span class="page-count" *ngIf="!loading()">{{ filtered().length }} de {{ tenants().length }}</span>
+  </div>
+  <button class="btn-primary" (click)="openCreate()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nuevo tenant
+  </button>
+</div>
+
+<!-- KPI STRIP (clickable filters) -->
+<div class="kpi-strip" *ngIf="!loading()">
+  <button class="kpi-card" [class.kpi-card--active]="kpiFilter()==='all'" (click)="setKpiFilter('all')" style="--idx:0">
+    <span class="kpi-num">{{ tenants().length }}</span>
+    <span class="kpi-tag">Total tenants</span>
+  </button>
+  <div class="kpi-sep"></div>
+  <button class="kpi-card" [class.kpi-card--active]="kpiFilter()==='ACTIVE'" (click)="setKpiFilter('ACTIVE')" style="--idx:1">
+    <span class="kpi-num kpi-num--ok">{{ kpiCounts().active }}</span>
+    <span class="kpi-tag">Activos</span>
+  </button>
+  <div class="kpi-sep"></div>
+  <button class="kpi-card" [class.kpi-card--active]="kpiFilter()==='TRIAL'" (click)="setKpiFilter('TRIAL')" style="--idx:2">
+    <span class="kpi-num kpi-num--warn">{{ kpiCounts().trial }}</span>
+    <span class="kpi-tag">En trial</span>
+  </button>
+  <div class="kpi-sep"></div>
+  <button class="kpi-card" [class.kpi-card--active]="kpiFilter()==='SUSPENDED'" (click)="setKpiFilter('SUSPENDED')" style="--idx:3">
+    <span class="kpi-num kpi-num--danger">{{ kpiCounts().suspended }}</span>
+    <span class="kpi-tag">Suspendidos</span>
+  </button>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <input class="search-input" type="search" placeholder="Buscar por nombre o slug…"
+         [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+  <button class="btn-icon" (click)="load()" title="Actualizar">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+  </button>
+</div>
+
+<!-- ERROR -->
+<div class="error-banner" *ngIf="error()">
+  {{ error() }}
+  <button class="btn-retry" (click)="load()">Reintentar</button>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table class="tenant-table">
+    <thead>
+      <tr>
+        <th>Tenant</th>
+        <th>Plan</th>
+        <th>Estado</th>
+        <th>Trial</th>
+        <th>Creado</th>
+        <th class="col-actions"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Skeleton -->
+      <ng-container *ngIf="loading()">
+        <tr class="skel-row" *ngFor="let _ of skeletonRows">
+          <td><div class="skel skel--name"></div><div class="skel skel--sub" style="margin-top:4px"></div></td>
+          <td><div class="skel skel--badge"></div></td>
+          <td><div class="skel skel--badge"></div></td>
+          <td><div class="skel skel--sub"></div></td>
+          <td><div class="skel skel--sub"></div></td>
+          <td></td>
+        </tr>
+      </ng-container>
+
+      <!-- Empty -->
+      <tr *ngIf="!loading() && filtered().length === 0">
+        <td colspan="6">
+          <div class="empty-state">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            <span>No hay tenants que coincidan con el filtro</span>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Rows -->
+      <ng-container *ngFor="let tenant of filtered(); let i = index">
+        <tr class="tenant-row" [class.tenant-row--selected]="selectedTenant()?.id === tenant.id"
+            [style.--idx]="i" (click)="openPanel(tenant)">
+          <td>
+            <div class="cell-name">{{ tenant.name }}</div>
+            <div class="cell-slug">{{ tenant.slug }}</div>
+          </td>
+          <td>
+            <span class="plan-badge" [attr.data-plan]="tenant.plan">
+              {{ planLabels[tenant.plan] }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge" [attr.data-status]="tenant.status">
+              {{ statusLabels[tenant.status] }}
+            </span>
+          </td>
+          <td>
+            <span class="trial-warn" *ngIf="trialDaysLeft(tenant) !== null && trialDaysLeft(tenant)! <= 5">
+              ⚠ vence en {{ trialDaysLeft(tenant) }}d
+            </span>
+            <span class="trial-ok" *ngIf="trialDaysLeft(tenant) !== null && trialDaysLeft(tenant)! > 5">
+              {{ trialDaysLeft(tenant) }}d restantes
+            </span>
+            <span class="cell-muted" *ngIf="trialDaysLeft(tenant) === null">—</span>
+          </td>
+          <td class="cell-date">{{ formatDate(tenant.createdAt) }}</td>
+          <td class="col-actions" (click)="$event.stopPropagation()">
+            <button class="btn-expand"
+                    [class.btn-expand--open]="expandedId() === tenant.id"
+                    (click)="toggleExpand(tenant.id)"
+                    [attr.aria-expanded]="expandedId() === tenant.id"
+                    title="Métricas rápidas">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </td>
+        </tr>
+
+        <!-- Expandable metrics row -->
+        <tr class="expand-row" [class.expand-row--open]="expandedId() === tenant.id">
+          <td colspan="6" class="expand-cell">
+            <div class="expand-inner" [class.expand-inner--open]="expandedId() === tenant.id">
+              <div class="expand-metrics">
+                <div class="expand-metric">
+                  <span class="em-num">—</span>
+                  <span class="em-label">Motos</span>
+                </div>
+                <div class="expand-sep"></div>
+                <div class="expand-metric">
+                  <span class="em-num">—</span>
+                  <span class="em-label">Ventas este mes</span>
+                </div>
+                <div class="expand-sep"></div>
+                <div class="expand-metric">
+                  <span class="em-num">—</span>
+                  <span class="em-label">Usuarios activos</span>
+                </div>
+                <div class="expand-sep"></div>
+                <div class="expand-metric">
+                  <code class="em-schema">{{ tenant.schemaName }}</code>
+                  <span class="em-label">Schema BD</span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ── DETAIL PANEL ─────────────────────────────────────────── -->
+<div class="panel-backdrop" *ngIf="panelOpen()" (click)="closePanel()"></div>
+<aside class="detail-panel" [class.detail-panel--open]="panelOpen()" *ngIf="selectedTenant() as t">
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-header-main">
+      <div class="panel-name">{{ t.name }}</div>
+      <div class="panel-sub">{{ t.slug }} · {{ t.countryCode }}</div>
+    </div>
+    <div class="panel-badges">
+      <span class="plan-badge plan-badge--sm" [attr.data-plan]="t.plan">{{ planLabels[t.plan] }}</span>
+      <span class="status-badge status-badge--sm" [attr.data-status]="t.status">{{ statusLabels[t.status] }}</span>
+    </div>
+    <button class="panel-close" (click)="closePanel()" aria-label="Cerrar panel">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Tab nav -->
+  <div class="tab-nav">
+    <button class="tab-btn" [class.tab-btn--active]="activeTab()==='info'"      (click)="setTab('info')">Info</button>
+    <button class="tab-btn" [class.tab-btn--active]="activeTab()==='hostnames'" (click)="setTab('hostnames')">Hostnames</button>
+    <button class="tab-btn" [class.tab-btn--active]="activeTab()==='billing'"   (click)="setTab('billing')">Billing</button>
+  </div>
+
+  <!-- Panel body -->
+  <div class="panel-body">
+    <!-- INFO TAB -->
+    <div class="tab-content" *ngIf="activeTab()==='info'">
+      <div class="info-grid">
+        <div class="info-field"><span class="if-label">ID</span><code class="if-val if-mono">{{ t.id }}</code></div>
+        <div class="info-field"><span class="if-label">Slug</span><span class="if-val if-mono">{{ t.slug }}</span></div>
+        <div class="info-field"><span class="if-label">Schema</span><code class="if-val if-mono">{{ t.schemaName }}</code></div>
+        <div class="info-field"><span class="if-label">País</span><span class="if-val">{{ t.countryCode }}</span></div>
+        <div class="info-field"><span class="if-label">Activado</span><span class="if-val">{{ formatDate(t.activatedAt) }}</span></div>
+        <div class="info-field"><span class="if-label">Trial hasta</span><span class="if-val">{{ formatDate(t.trialEndsAt) }}</span></div>
+        <div class="info-field"><span class="if-label">Creado</span><span class="if-val">{{ formatDate(t.createdAt) }}</span></div>
+        <div class="info-field"><span class="if-label">Actualizado</span><span class="if-val">{{ formatDate(t.updatedAt) }}</span></div>
+      </div>
+
+      <!-- Plan change inline -->
+      <div class="section-divider">Cambiar plan</div>
+      <div class="plan-grid">
+        <button *ngFor="let p of planOrder" class="plan-option"
+                [class.plan-option--current]="t.plan === p"
+                [class.plan-option--selected]="selectedPlan() === p && planChangeOpen()"
+                (click)="openPlanChange(); selectedPlan.set(p)">
+          <span class="po-name">{{ planLabels[p] }}</span>
+          <span class="po-current" *ngIf="t.plan === p">actual</span>
+        </button>
+      </div>
+      <div class="plan-action" *ngIf="planChangeOpen() && selectedPlan() !== t.plan">
+        <button class="btn-confirm-plan" (click)="confirmPlanChange()" [disabled]="planChanging()">
+          <span class="spinner" *ngIf="planChanging()"></span>
+          <span *ngIf="!planChanging()">Confirmar cambio a {{ planLabels[selectedPlan()] }}</span>
+        </button>
+        <button class="btn-cancel" (click)="planChangeOpen.set(false)">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- HOSTNAMES TAB -->
+    <div class="tab-content" *ngIf="activeTab()==='hostnames'">
+      <div class="empty-state empty-state--sm">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span>Gestión de hostnames próximamente</span>
+      </div>
+    </div>
+
+    <!-- BILLING TAB -->
+    <div class="tab-content" *ngIf="activeTab()==='billing'">
+      <div class="empty-state empty-state--sm">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <span>Facturación a tenants próximamente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer action bar — danger zone -->
+  <div class="panel-footer">
+    <ng-container *ngIf="t.status !== 'SUSPENDED'">
+      <button class="btn-danger" (click)="openSuspend()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        Suspender tenant
+      </button>
+    </ng-container>
+    <ng-container *ngIf="t.status === 'SUSPENDED'">
+      <button class="btn-activate" (click)="activateTenant()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Reactivar tenant
+      </button>
+    </ng-container>
+  </div>
+</aside>
+
+
+<!-- ── CREATE PANEL ────────────────────────────────────────── -->
+<div class="panel-backdrop" *ngIf="createOpen()" (click)="closeCreate()"></div>
+<aside class="detail-panel create-panel" [class.detail-panel--open]="createOpen()">
+  <div class="panel-header">
+    <div class="panel-header-main">
+      <div class="panel-name">Nuevo tenant</div>
+      <div class="panel-sub">Crea una nueva tienda en la plataforma</div>
+    </div>
+    <button class="panel-close" (click)="closeCreate()" [disabled]="createLoading()" aria-label="Cerrar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="panel-body">
+    <!-- Form -->
+    <div class="create-form" *ngIf="createSteps().length === 0">
+      <div class="cf-field">
+        <label class="cf-label">Nombre de la tienda *</label>
+        <input class="cf-input" type="text" placeholder="Ej: Moto Ya Digital"
+               [(ngModel)]="createForm.name" [disabled]="createLoading()" />
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">Slug *</label>
+        <input class="cf-input cf-mono" type="text" placeholder="Ej: moto-ya-digital"
+               [(ngModel)]="createForm.slug" [disabled]="createLoading()" />
+        <span class="cf-hint">Solo minúsculas, números y guiones. Mínimo 3 caracteres.</span>
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">Plan</label>
+        <select class="cf-select" [(ngModel)]="createForm.plan" [disabled]="createLoading()">
+          <option *ngFor="let p of planOrder" [value]="p">{{ planLabels[p] }}</option>
+        </select>
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">País</label>
+        <select class="cf-select" [(ngModel)]="createForm.countryCode" [disabled]="createLoading()">
+          <option value="PE">Perú</option>
+          <option value="CO">Colombia</option>
+          <option value="MX">México</option>
+        </select>
+      </div>
+      <div class="error-banner" *ngIf="createError()">{{ createError() }}</div>
+    </div>
+
+    <!-- Creation progress (shown after submit) -->
+    <div class="creation-progress" *ngIf="createSteps().length > 0">
+      <div class="cp-title">Creando tenant…</div>
+      <div class="cp-steps">
+        <div class="cp-step" *ngFor="let step of createSteps(); let i = index"
+             [attr.data-status]="step.status" [style.--idx]="i">
+          <div class="cp-icon">
+            <svg *ngIf="step.status === 'done'" class="cp-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <div *ngIf="step.status === 'loading'" class="cp-spinner"></div>
+            <svg *ngIf="step.status === 'error'" class="cp-error-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <div *ngIf="step.status === 'pending'" class="cp-dot"></div>
+          </div>
+          <span class="cp-label">{{ step.label }}</span>
+        </div>
+      </div>
+      <div class="cp-success" *ngIf="createSteps().length > 0 && createSteps()[createSteps().length-1].status === 'done'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Tenant creado exitosamente
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-footer" *ngIf="createSteps().length === 0">
+    <button class="btn-primary" (click)="submitCreate()"
+            [disabled]="createLoading() || !createForm.slug || !createForm.name">
+      <span class="spinner spinner--dark" *ngIf="createLoading()"></span>
+      <span *ngIf="!createLoading()">Crear tenant</span>
+    </button>
+    <button class="btn-cancel" (click)="closeCreate()">Cancelar</button>
+  </div>
+  <div class="panel-footer" *ngIf="createSteps().length > 0 && !createLoading()">
+    <button class="btn-cancel" (click)="closeCreate()">Cerrar</button>
+  </div>
+</aside>
+
+
+<!-- ── SUSPEND DIALOG ──────────────────────────────────────── -->
+<div class="dialog-backdrop" *ngIf="suspendOpen()" (click)="closeSuspend()"></div>
+<div class="danger-dialog" *ngIf="suspendOpen()">
+  <div class="dd-icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+  </div>
+  <h2 class="dd-title">Suspender tenant</h2>
+  <p class="dd-body">
+    Esta acción suspende <strong>{{ selectedTenant()?.name }}</strong> inmediatamente.
+    Los usuarios de la tienda no podrán acceder hasta que lo reactives.
+  </p>
+  <p class="dd-confirm-label">
+    Escribe el slug del tenant para confirmar: <code>{{ selectedTenant()?.slug }}</code>
+  </p>
+  <input class="dd-input" [class.dd-input--shake]="suspendShake()"
+         type="text" placeholder="{{ selectedTenant()?.slug }}"
+         [ngModel]="suspendSlugInput()" (ngModelChange)="suspendSlugInput.set($event)"
+         (animationend)="suspendShake.set(false)" />
+  <div class="dd-footer">
+    <button class="btn-cancel" (click)="closeSuspend()">Cancelar</button>
+    <button class="btn-danger" (click)="confirmSuspend()" [disabled]="suspendLoading()">
+      <span class="spinner" *ngIf="suspendLoading()"></span>
+      <span *ngIf="!suspendLoading()">Suspender</span>
+    </button>
+  </div>
+</div>

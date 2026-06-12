@@ -1,0 +1,169 @@
+<div class="fr-page">
+
+  <!-- Header -->
+  <div class="fr-header">
+    <div>
+      <h1>Fintechs integradas</h1>
+      <p class="fr-sub">Socios de crédito conectados a MotoStore</p>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpi-strip" *ngIf="!loading()">
+    <div class="kpi-card" [style.--idx]="0">
+      <span class="kpi-val">{{ fintechs().length }}</span>
+      <span class="kpi-label">Total</span>
+    </div>
+    <div class="kpi-card" [style.--idx]="1">
+      <span class="kpi-val kpi-val--green">{{ activeCount() }}</span>
+      <span class="kpi-label">Activas</span>
+    </div>
+    <div class="kpi-card" [style.--idx]="2">
+      <span class="kpi-val">{{ totalCredits() | number }}</span>
+      <span class="kpi-label">Créditos originados</span>
+    </div>
+    <div class="kpi-card" [style.--idx]="3">
+      <span class="kpi-val">{{ avgApproval() | number:'1.0-0' }}%</span>
+      <span class="kpi-label">Aprobación promedio</span>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="fr-list">
+
+    <!-- Skeleton -->
+    <div class="fr-card fr-card--skel" *ngFor="let _ of skeletonRows; let i = index"
+         [style.--idx]="i" [class.hidden]="!loading()">
+      <div class="skel skel--name"></div>
+      <div class="skel skel--badge"></div>
+      <div class="skel skel--meta"></div>
+    </div>
+
+    <!-- Fintech cards -->
+    <ng-container *ngIf="!loading()">
+      <button class="fr-card" *ngFor="let f of fintechs(); let i = index"
+              [style.--idx]="i"
+              [class.fr-card--selected]="selectedId() === f.id"
+              (click)="openDetail(f.id)">
+
+        <div class="fr-card-main">
+          <div class="fr-card-top">
+            <span class="fr-name">{{ f.name }}</span>
+            <span class="badge" [class]="statusClass(f.status)">
+              {{ STATUS_LABELS[f.status] }}
+            </span>
+          </div>
+          <div class="fr-card-meta">
+            <span>{{ f.countryCode }}</span>
+            <span class="sep">·</span>
+            <span>{{ f.creditsCount | number }} créditos</span>
+            <span class="sep">·</span>
+            <span>{{ f.approvalPct }}% aprobación</span>
+            <ng-container *ngIf="f.avgLatencyMs !== null">
+              <span class="sep">·</span>
+              <span>{{ f.avgLatencyMs }}ms</span>
+            </ng-container>
+          </div>
+        </div>
+
+        <svg class="fr-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L10.19 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/>
+        </svg>
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-overlay" [class.detail-overlay--open]="panelOpen()"
+       (click)="closePanel()"></div>
+
+  <aside class="detail-panel" [class.detail-panel--open]="panelOpen()"
+         role="dialog" aria-label="Detalle fintech"
+         *ngIf="selected()">
+
+    <div class="dp-header">
+      <div>
+        <h2 class="dp-name">{{ selected()!.name }}</h2>
+        <span class="badge" [class]="statusClass(selected()!.status)">
+          {{ STATUS_LABELS[selected()!.status] }}
+        </span>
+      </div>
+      <button class="dp-close" (click)="closePanel()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="dp-stats">
+      <div class="dp-stat">
+        <div class="dp-stat-val">{{ selected()!.creditsCount | number }}</div>
+        <div class="dp-stat-label">Créditos originados</div>
+      </div>
+      <div class="dp-stat">
+        <div class="dp-stat-val">{{ selected()!.approvalPct }}%</div>
+        <div class="dp-stat-label">Tasa de aprobación</div>
+      </div>
+      <div class="dp-stat">
+        <div class="dp-stat-val" *ngIf="selected()!.avgLatencyMs !== null">
+          {{ selected()!.avgLatencyMs }}ms
+        </div>
+        <div class="dp-stat-val dp-stat-val--na" *ngIf="selected()!.avgLatencyMs === null">—</div>
+        <div class="dp-stat-label">Latencia promedio API</div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="dp-section">
+      <h3 class="dp-section-title">Información</h3>
+      <div class="dp-row">
+        <span class="dp-key">Slug</span>
+        <code class="dp-val-mono">{{ selected()!.slug }}</code>
+      </div>
+      <div class="dp-row">
+        <span class="dp-key">País</span>
+        <span>{{ selected()!.countryCode }}</span>
+      </div>
+      <div class="dp-row">
+        <span class="dp-key">Contacto</span>
+        <span>{{ selected()!.contactEmail }}</span>
+      </div>
+      <div class="dp-row">
+        <span class="dp-key">API Key</span>
+        <code class="dp-val-mono">{{ selected()!.apiKeyPrefix }}••••••••</code>
+      </div>
+      <div class="dp-row">
+        <span class="dp-key">Integrada</span>
+        <span>{{ selected()!.createdAt | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="dp-row" *ngIf="selected()!.lastActivityAt">
+        <span class="dp-key">Último evento</span>
+        <span>{{ selected()!.lastActivityAt | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+    </div>
+
+    <!-- Webhooks -->
+    <div class="dp-section">
+      <h3 class="dp-section-title">Webhooks</h3>
+
+      <div class="wh-empty" *ngIf="selected()!.webhooks.length === 0">
+        Sin webhooks configurados
+      </div>
+
+      <div class="wh-item" *ngFor="let wh of selected()!.webhooks; let i = index"
+           [style.--idx]="i">
+        <div class="wh-top">
+          <span class="wh-event">{{ wh.event }}</span>
+          <span class="ping-badge" [class]="pingClass(wh.pingStatus)">{{ wh.pingStatus }}</span>
+        </div>
+        <div class="wh-url">{{ wh.url }}</div>
+        <div class="wh-meta" *ngIf="wh.lastPing">
+          Último ping: {{ wh.lastPing | date:'dd/MM HH:mm' }}
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+</div>

@@ -1,1 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
+/* Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* Tema base MotoStore Platform */
+@theme {
+  --font-family-sans: Roboto, "Helvetica Neue", sans-serif;
+}
+
+html, body { height: 100%; }
+body { margin: 0; }

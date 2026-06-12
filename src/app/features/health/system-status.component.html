@@ -1,0 +1,242 @@
+<div class="ss-page">
+
+  <!-- Header con estado global -->
+  <div class="ss-header">
+    <div class="ss-title">
+      <span class="status-orb" [class]="'status-orb--' + overallStatus().toLowerCase()"></span>
+      <h1>Salud del sistema</h1>
+      <span class="status-badge" [class]="'status-badge--' + overallStatus().toLowerCase()">
+        {{ overallStatus() === 'UP' ? 'Operativo' : overallStatus() === 'DEGRADED' ? 'Degradado' : 'Incidente' }}
+      </span>
+    </div>
+    <p class="ss-subtitle" *ngIf="health()">
+      {{ health()!.tenantCount }} tenants activos ·
+      Actualizado {{ health()!.timestamp | date:'HH:mm' }}
+    </p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="ss-tabs" role="tablist">
+    <button role="tab" class="ss-tab" [class.ss-tab--active]="activeTab() === 'status'"
+            (click)="setTab('status')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm0 2a.75.75 0 0 0-.75.75v3.5l2.25 1.3a.75.75 0 1 0 .75-1.3L9 8.5V5.75A.75.75 0 0 0 8 5z"/>
+      </svg>
+      Estado
+    </button>
+    <button role="tab" class="ss-tab" [class.ss-tab--active]="activeTab() === 'usage'"
+            (click)="setTab('usage')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3zm0 6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V9z"/>
+      </svg>
+      Uso de tenants
+    </button>
+    <button role="tab" class="ss-tab" [class.ss-tab--active]="activeTab() === 'errors'"
+            (click)="setTab('errors')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8.22 1.754a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575L6.457 1.047zM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-.25-5.25a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z"/>
+      </svg>
+      Errores
+      <span class="tab-badge" *ngIf="errors().length > 0">{{ errors().length }}</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════ TAB: STATUS ═══════════════════════ -->
+  <div class="tab-panel" *ngIf="activeTab() === 'status'">
+    <div class="svc-grid">
+      <div class="svc-card"
+           *ngFor="let svc of services(); let i = index"
+           [style.--idx]="i"
+           [class]="'svc-card--' + svc.status.toLowerCase()">
+        <div class="svc-icon">
+          <!-- Cloud Run -->
+          <svg *ngIf="svc.key === 'cloud-run'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+          </svg>
+          <!-- Cloud SQL -->
+          <svg *ngIf="svc.key === 'cloud-sql'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 3.79 5 6v12c0 2.21 3.13 4 7 4s7-1.79 7-4V6c0-2.21-3.13-4-7-4zm5 14c0 1.1-2.24 2-5 2s-5-.9-5-2v-1.23c1.28.75 3.01 1.23 5 1.23s3.72-.48 5-1.23V16zm0-4c0 1.1-2.24 2-5 2s-5-.9-5-2v-1.23C8.28 11.75 10.01 12.23 12 12.23s3.72-.48 5-1.23V12zm-5-2C9.24 10 7 9.1 7 8s2.24-2 5-2 5 .9 5 2-2.24 2-5 2z"/>
+          </svg>
+          <!-- Firestore -->
+          <svg *ngIf="svc.key === 'firestore'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3.89 15.673L6.255.461A.542.542 0 0 1 7.27.288l2.543 4.771zm16.794 3.692l-2.25-14a.54.54 0 0 0-.919-.295L3.316 19.365l7.856 4.427a1.621 1.621 0 0 0 1.588 0zM14.3 9.479l-1.256-2.314a.542.542 0 0 0-.957 0L6.09 18.876z"/>
+          </svg>
+          <!-- Pub/Sub -->
+          <svg *ngIf="svc.key === 'pubsub'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/>
+          </svg>
+          <!-- Cloud Storage -->
+          <svg *ngIf="svc.key === 'storage'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+          </svg>
+          <!-- Firebase Auth -->
+          <svg *ngIf="svc.key === 'firebase'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 2.61 1.37 4.88 3.41 6.21L12 22l3.59-6.79C17.63 13.88 19 11.61 19 9c0-3.87-3.13-7-7-7zm0 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+          </svg>
+        </div>
+        <div class="svc-info">
+          <div class="svc-name">{{ svc.name }}</div>
+          <div class="svc-desc">{{ svc.description }}</div>
+        </div>
+        <div class="svc-status-right">
+          <div class="svc-dot" [class]="'svc-dot--' + svc.status.toLowerCase()"></div>
+          <div class="svc-latency" *ngIf="svc.latencyMs !== null">{{ svc.latencyMs }}ms</div>
+          <div class="svc-latency svc-latency--na" *ngIf="svc.latencyMs === null">—</div>
+          <div class="svc-status-label">{{ svc.status }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cloud Logging link (para producción) -->
+    <div class="cloud-link">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1z"/>
+      </svg>
+      Ver logs en Cloud Logging
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TAB: USO ═══════════════════════ -->
+  <div class="tab-panel" *ngIf="activeTab() === 'usage'">
+
+    <div class="usage-toolbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"/>
+        </svg>
+        <input class="search-input" type="text" placeholder="Buscar tenant..."
+               [ngModel]="usageQuery()" (ngModelChange)="usageQuery.set($event)">
+      </div>
+      <button class="btn-refresh" (click)="loadUsage()" [disabled]="usageLoad()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"
+             [class.spinning]="usageLoad()">
+          <path d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.501 5.501 0 0 0 8 2.5ZM1.705 8.005a.75.75 0 0 1 .834.656 5.501 5.501 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834Z"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- Error state -->
+    <div class="usage-err" *ngIf="usageErr()">
+      No se pudo cargar el uso de tenants. Verifica que el backend esté corriendo.
+      <button (click)="loadUsage()">Reintentar</button>
+    </div>
+
+    <div class="usage-table-wrap" *ngIf="!usageErr()">
+      <table class="usage-table">
+        <thead>
+          <tr>
+            <th class="th-sort" (click)="toggleSort('name')">
+              Tenant
+              <span class="sort-icon" *ngIf="sortField() === 'name'">
+                {{ sortDir() === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="th-sort" (click)="toggleSort('plan')">
+              Plan
+              <span class="sort-icon" *ngIf="sortField() === 'plan'">
+                {{ sortDir() === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="th-sort th-num" (click)="toggleSort('apiCalls')">
+              API calls
+              <span class="sort-icon" *ngIf="sortField() === 'apiCalls'">
+                {{ sortDir() === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="th-sort th-num" (click)="toggleSort('storageKb')">
+              Storage
+              <span class="sort-icon" *ngIf="sortField() === 'storageKb'">
+                {{ sortDir() === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="th-sort th-num" (click)="toggleSort('userCount')">
+              Usuarios
+              <span class="sort-icon" *ngIf="sortField() === 'userCount'">
+                {{ sortDir() === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="th-sort th-num" (click)="toggleSort('motoCount')">
+              Motos
+              <span class="sort-icon" *ngIf="sortField() === 'motoCount'">
+                {{ sortDir() === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Skeleton -->
+          <tr class="skel-row" *ngFor="let _ of skeletonRows; let i = index"
+              [style.--idx]="i" [class.hidden]="!usageLoad()">
+            <td><div class="skel skel--name"></div></td>
+            <td><div class="skel skel--plan"></div></td>
+            <td><div class="skel skel--num"></div></td>
+            <td><div class="skel skel--num"></div></td>
+            <td><div class="skel skel--num"></div></td>
+            <td><div class="skel skel--num"></div></td>
+          </tr>
+          <!-- Data rows -->
+          <ng-container *ngIf="!usageLoad()">
+            <tr class="usage-row" *ngFor="let t of sortedUsage(); let i = index"
+                [style.--idx]="i">
+              <td class="td-tenant">
+                <div class="tenant-name">{{ t.name }}</div>
+                <div class="tenant-slug">{{ t.slug }}</div>
+              </td>
+              <td>
+                <span class="plan-chip" [class]="'plan-chip--' + t.plan.toLowerCase()">
+                  {{ t.plan }}
+                </span>
+              </td>
+              <td class="td-num">{{ t.apiCalls | number }}</td>
+              <td class="td-num">{{ formatKb(t.storageKb) }}</td>
+              <td class="td-num">{{ t.userCount | number }}</td>
+              <td class="td-num">{{ t.motoCount | number }}</td>
+            </tr>
+            <!-- Empty -->
+            <tr *ngIf="sortedUsage().length === 0">
+              <td colspan="6" class="td-empty">
+                No hay tenants que coincidan con "{{ usageQuery() }}"
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TAB: ERRORES ═══════════════════════ -->
+  <div class="tab-panel" *ngIf="activeTab() === 'errors'">
+    <!-- Empty state (local dev) -->
+    <div class="errors-empty" *ngIf="errors().length === 0">
+      <div class="errors-empty-icon">
+        <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+        </svg>
+      </div>
+      <p class="errors-empty-title">Sin errores críticos</p>
+      <p class="errors-empty-sub">
+        En producción se mostrarían errores de las últimas 24h desde Cloud Logging.
+      </p>
+      <a class="cloud-link-btn" href="#" (click)="$event.preventDefault()">
+        Ver Cloud Logging →
+      </a>
+    </div>
+
+    <!-- Error list (si hubiera) -->
+    <div class="error-list" *ngIf="errors().length > 0">
+      <div class="error-item" *ngFor="let e of errors(); let i = index"
+           [style.--idx]="i" [class]="'error-item--' + e.severity.toLowerCase()">
+        <div class="error-sev">{{ e.severity }}</div>
+        <div class="error-body">
+          <div class="error-service">{{ e.service }}</div>
+          <div class="error-msg">{{ e.message }}</div>
+          <div class="error-meta">
+            {{ e.count }}x · Último: {{ e.lastSeen | date:'dd/MM HH:mm' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
