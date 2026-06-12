@@ -1,10 +1,70 @@
 /* Tailwind CSS v4 */
 @import "tailwindcss";
 
-/* Tema base MotoStore Platform */
 @theme {
   --font-family-sans: Roboto, "Helvetica Neue", sans-serif;
+  --font-family-mono: "Roboto Mono", "Cascadia Code", ui-monospace, monospace;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MotoStore Platform — Design Tokens
+   Strategy: restrained light · accent electric indigo oklch(54% 0.24 265)
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Backgrounds ──────────────────────────────────────────── */
+  --bg:        oklch(96.5% 0.007 265);  /* page bg, tinted toward accent */
+  --bg-2:      oklch(93.0% 0.010 265);  /* hover, zebra, secondary zones */
+  --surface:   oklch(99.0% 0.003 265);  /* card / panel surfaces */
+
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border:    oklch(88.0% 0.012 265);
+  --hairline:  oklch(92.0% 0.008 265);
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --ink:       oklch(14%   0.025 265);  /* primary  — ≥7:1 on --surface */
+  --ink-2:     oklch(36%   0.030 265);  /* secondary — ≥4.5:1 on --surface */
+  --ink-3:     oklch(56%   0.022 265);  /* muted / placeholders */
+
+  /* ── Accent (electric indigo) ─────────────────────────────── */
+  --accent:      oklch(54%  0.240 265);
+  --accent-soft: oklch(95%  0.040 265);
+  --accent-ink:  oklch(40%  0.220 265);
+
+  /* ── Semantic ─────────────────────────────────────────────── */
+  --danger:  oklch(55% 0.220  25);
+  --success: oklch(55% 0.180 152);
+  --warning: oklch(60% 0.190  78);
+
+  /* ── Radii ────────────────────────────────────────────────── */
+  --r-xs:   4px;
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-pill: 9999px;
+
+  /* ── Shadow ───────────────────────────────────────────────── */
+  --shadow-2: 0 1px 3px oklch(0% 0 0 / 0.07), 0 4px 16px oklch(0% 0 0 / 0.05);
+
+  /* ── Typography roles ─────────────────────────────────────── */
+  --font-display: Roboto, "Helvetica Neue", sans-serif;
+  --font-body:    Roboto, "Helvetica Neue", sans-serif;
+  --font-mono:    "Roboto Mono", "Cascadia Code", ui-monospace, monospace;
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
 html, body { height: 100%; }
-body { margin: 0; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Focus ring ───────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

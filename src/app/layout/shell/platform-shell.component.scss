@@ -1,3 +1,13 @@
+/* ── Skip link (accesibilidad teclado) ────────────────────────── */
+.skip-link {
+  position: absolute; top: -100%; left: 8px;
+  padding: 8px 16px; border-radius: var(--r-sm);
+  background: var(--accent); color: #fff;
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  z-index: 9999; white-space: nowrap;
+  &:focus { top: 8px; }
+}
+
 /* ── Shell layout ─────────────────────────────────────────────── */
 .shell {
   display: grid; grid-template-columns: 220px 1fr;
