@@ -49,6 +49,37 @@ export class TenantListComponent implements OnInit {
     adminEmail: '', adminFullName: ''
   };
 
+  provisionPanelEmail   = signal('');
+  provisionPanelName    = signal('');
+  provisionPanelLoading = signal(false);
+  provisionPanelError   = signal<string | null>(null);
+  provisionPanelResult  = signal<ProvisionResult | null>(null);
+
+  provisionFromPanel() {
+    const tenant = this.selectedTenant();
+    const email  = this.provisionPanelEmail().trim();
+    const name   = this.provisionPanelName().trim();
+    if (!tenant || !email || !name) return;
+
+    this.provisionPanelLoading.set(true);
+    this.provisionPanelError.set(null);
+
+    this.svc.provisionTenant(tenant.id, email, name).subscribe({
+      next: (result) => {
+        this.provisionPanelResult.set(result);
+        this.tenants.update(ts =>
+          ts.map(t => t.id === tenant.id ? { ...t, status: 'ACTIVE' as const } : t)
+        );
+        this.selectedTenant.update(t => t ? { ...t, status: 'ACTIVE' as const } : t);
+        this.provisionPanelLoading.set(false);
+      },
+      error: (e) => {
+        this.provisionPanelError.set(e?.error?.message ?? 'Error al provisionar el tenant.');
+        this.provisionPanelLoading.set(false);
+      },
+    });
+  }
+
   suspendOpen    = signal(false);
   suspendSlugInput = signal('');
   suspendLoading = signal(false);

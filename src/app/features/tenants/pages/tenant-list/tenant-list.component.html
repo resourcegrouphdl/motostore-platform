@@ -215,6 +215,60 @@
         </button>
         <button class="btn-cancel" (click)="planChangeOpen.set(false)">Cancelar</button>
       </div>
+      <!-- Provisioning section — only shown when tenant is TRIAL (schema not yet created) -->
+      <ng-container *ngIf="t.status === 'TRIAL' && !provisionPanelResult()">
+        <div class="section-divider">Provisionar tenant</div>
+        <p class="provision-hint">
+          Este tenant aún no tiene schema ni usuario admin. Completa los datos para crearlo ahora.
+        </p>
+        <div class="cf-field">
+          <label class="cf-label">Email del admin *</label>
+          <input class="cf-input" type="email" placeholder="admin@tienda.pe"
+                 [ngModel]="provisionPanelEmail()" (ngModelChange)="provisionPanelEmail.set($event)"
+                 [disabled]="provisionPanelLoading()" />
+        </div>
+        <div class="cf-field" style="margin-top:10px">
+          <label class="cf-label">Nombre completo *</label>
+          <input class="cf-input" type="text" placeholder="Carlos Ramos"
+                 [ngModel]="provisionPanelName()" (ngModelChange)="provisionPanelName.set($event)"
+                 [disabled]="provisionPanelLoading()" />
+        </div>
+        <div class="error-banner" style="margin-top:10px" *ngIf="provisionPanelError()">
+          {{ provisionPanelError() }}
+        </div>
+        <button class="btn-provision" style="margin-top:12px"
+                (click)="provisionFromPanel()"
+                [disabled]="provisionPanelLoading() || !provisionPanelEmail() || !provisionPanelName()">
+          <span class="spinner" *ngIf="provisionPanelLoading()"></span>
+          <svg *ngIf="!provisionPanelLoading()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 13 9 20 9"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5"/></svg>
+          <span *ngIf="!provisionPanelLoading()">Crear schema y usuario admin</span>
+          <span *ngIf="provisionPanelLoading()">Provisionando…</span>
+        </button>
+      </ng-container>
+
+      <!-- Provision success result in panel -->
+      <div class="provision-result" *ngIf="provisionPanelResult()">
+        <div class="pr-header">
+          <svg class="pr-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="pr-title">Tenant provisionado</span>
+        </div>
+        <div class="pr-row">
+          <span class="pr-label">URL del admin</span>
+          <span class="pr-val pr-mono">{{ provisionPanelResult()!.adminUrl }}</span>
+        </div>
+        <div class="pr-row">
+          <span class="pr-label">Email de acceso</span>
+          <span class="pr-val">{{ provisionPanelResult()!.adminEmail }}</span>
+        </div>
+        <div class="pr-row">
+          <span class="pr-label">Schema</span>
+          <span class="pr-val pr-mono">{{ provisionPanelResult()!.schema }}</span>
+        </div>
+        <div class="pr-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          El admin debe usar "Olvidé mi contraseña" en Firebase para activar su acceso.
+        </div>
+      </div>
     </div>
 
     <!-- HOSTNAMES TAB -->
