@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { TenantService } from '../../services/tenant.service';
+import { TenantService, ProvisionResult } from '../../services/tenant.service';
 import {
   Tenant, TenantPlan, TenantStatus,
   PLAN_LABELS, PLAN_ORDER, STATUS_LABELS, CreateTenantRequest, trialDaysLeft
@@ -39,12 +39,14 @@ export class TenantListComponent implements OnInit {
   activeTab    = signal<PanelTab>('info');
 
   createOpen   = signal(false);
-  createLoading = signal(false);
-  createError  = signal<string | null>(null);
-  createSteps  = signal<CreationStep[]>([]);
+  createLoading   = signal(false);
+  createError     = signal<string | null>(null);
+  createSteps     = signal<CreationStep[]>([]);
+  provisionResult = signal<ProvisionResult | null>(null);
 
   createForm = {
-    slug: '', name: '', plan: 'STARTER' as TenantPlan, countryCode: 'PE'
+    slug: '', name: '', plan: 'STARTER' as TenantPlan, countryCode: 'PE',
+    adminEmail: '', adminFullName: ''
   };
 
   suspendOpen    = signal(false);
@@ -111,52 +113,62 @@ export class TenantListComponent implements OnInit {
   setTab(tab: PanelTab) { this.activeTab.set(tab); }
 
   openCreate() {
-    this.createForm = { slug: '', name: '', plan: 'STARTER', countryCode: 'PE' };
+    this.createForm = { slug: '', name: '', plan: 'STARTER', countryCode: 'PE', adminEmail: '', adminFullName: '' };
     this.createError.set(null);
     this.createSteps.set([]);
     this.createLoading.set(false);
     this.createOpen.set(true);
   }
 
-  closeCreate() { if (!this.createLoading()) this.createOpen.set(false); }
+  closeCreate() {
+    if (!this.createLoading()) {
+      this.createOpen.set(false);
+      this.provisionResult.set(null);
+    }
+  }
 
   submitCreate() {
-    if (!this.createForm.slug || !this.createForm.name) return;
+    const { slug, name, adminEmail, adminFullName } = this.createForm;
+    if (!slug || !name || !adminEmail || !adminFullName) return;
 
     const steps: CreationStep[] = [
-      { key: 'db',       label: 'Registro en base de datos',  status: 'loading' },
-      { key: 'schema',   label: 'Schema PostgreSQL del tenant', status: 'pending' },
-      { key: 'firestore', label: 'Configuración Firestore',    status: 'pending' },
-      { key: 'email',    label: 'Email de bienvenida',         status: 'pending' },
+      { key: 'db',       label: 'Registrando tenant en BD',         status: 'loading' },
+      { key: 'schema',   label: 'Creando schema PostgreSQL',         status: 'pending' },
+      { key: 'firebase', label: 'Creando usuario administrador',     status: 'pending' },
+      { key: 'done',     label: 'Tenant listo',                      status: 'pending' },
     ];
     this.createSteps.set(steps);
     this.createLoading.set(true);
     this.createError.set(null);
 
     const req: CreateTenantRequest = {
-      slug: this.createForm.slug,
-      name: this.createForm.name,
-      plan: this.createForm.plan,
-      countryCode: this.createForm.countryCode,
+      slug, name, plan: this.createForm.plan, countryCode: this.createForm.countryCode,
     };
 
+    // Paso 1: crear el registro del tenant
     this.svc.createTenant(req).subscribe({
       next: (tenant) => {
         this.advanceStep('db', 'done');
         this.advanceStep('schema', 'loading');
-        setTimeout(() => {
-          this.advanceStep('schema', 'done');
-          this.advanceStep('firestore', 'loading');
-          setTimeout(() => {
-            this.advanceStep('firestore', 'done');
-            this.advanceStep('email', 'loading');
-            setTimeout(() => {
-              this.advanceStep('email', 'done');
-              this.tenants.update(ts => [tenant, ...ts]);
-              this.createLoading.set(false);
-            }, 600);
-          }, 500);
-        }, 400);
+
+        // Paso 2: provisionar schema + usuario admin
+        this.svc.provisionTenant(tenant.id, adminEmail, adminFullName).subscribe({
+          next: (result) => {
+            this.advanceStep('schema', 'done');
+            this.advanceStep('firebase', 'done');
+            this.advanceStep('done', 'done');
+            // Actualiza el tenant en la lista con status ACTIVE
+            const activeTenant = { ...tenant, status: 'ACTIVE' as const };
+            this.tenants.update(ts => [activeTenant, ...ts]);
+            this.provisionResult.set(result);
+            this.createLoading.set(false);
+          },
+          error: (e) => {
+            this.advanceStep('schema', 'error');
+            this.createError.set(e?.error?.message ?? 'Error en el provisioning del schema.');
+            this.createLoading.set(false);
+          },
+        });
       },
       error: (e) => {
         this.advanceStep('db', 'error');

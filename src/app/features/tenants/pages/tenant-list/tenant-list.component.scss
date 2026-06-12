@@ -308,6 +308,43 @@
 }
 .cf-mono  { font-family: var(--font-mono); }
 .cf-hint  { font-size: 11.5px; color: var(--ink-3); }
+.cf-divider {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0 2px;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+}
+.cf-divider-label { font-size: 11px; font-weight: 600; color: var(--ink-3); white-space: nowrap; }
+
+/* Provision result card — shown after successful provisioning */
+.provision-result {
+  margin-top: 16px; border-radius: var(--r-sm);
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface));
+  overflow: hidden;
+  opacity: 1; transform: translateY(0);
+  transition: opacity 220ms ease-out, transform 220ms cubic-bezier(0.16,1,0.3,1);
+  @starting-style { opacity: 0; transform: translateY(8px); }
+}
+.pr-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid color-mix(in oklab, var(--accent) 20%, transparent);
+}
+.pr-icon { color: var(--accent); flex-shrink: 0; }
+.pr-title { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.pr-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  &:last-of-type { border-bottom: none; }
+}
+.pr-label { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.pr-val { font-size: 12.5px; color: var(--ink); font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+.pr-mono { font-family: var(--font-mono); font-size: 12px; }
+.pr-note {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 8px 14px; border-top: 1px solid color-mix(in oklab, var(--accent) 15%, transparent);
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
+  font-size: 11.5px; color: var(--ink-2); line-height: 1.45;
+  svg { flex-shrink: 0; margin-top: 1px; color: var(--accent); }
+}
 
 /* Creation progress — Jhey expressiveness en momento raro y significativo */
 .creation-progress { padding: 4px 0; }

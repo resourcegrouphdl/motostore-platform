@@ -293,6 +293,23 @@
           <option value="MX">México</option>
         </select>
       </div>
+
+      <div class="cf-divider">
+        <span class="cf-divider-label">Administrador inicial</span>
+      </div>
+
+      <div class="cf-field">
+        <label class="cf-label">Email del admin *</label>
+        <input class="cf-input" type="email" placeholder="Ej: admin@motoyadigital.pe"
+               [(ngModel)]="createForm.adminEmail" [disabled]="createLoading()" />
+        <span class="cf-hint">Se creará (o reutilizará) una cuenta Firebase con este email.</span>
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">Nombre completo *</label>
+        <input class="cf-input" type="text" placeholder="Ej: Carlos Ramos"
+               [(ngModel)]="createForm.adminFullName" [disabled]="createLoading()" />
+      </div>
+
       <div class="error-banner" *ngIf="createError()">{{ createError() }}</div>
     </div>
 
@@ -313,16 +330,40 @@
       </div>
       <div class="cp-success" *ngIf="createSteps().length > 0 && createSteps()[createSteps().length-1].status === 'done'">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Tenant creado exitosamente
+        Tenant creado y provisionado exitosamente
+      </div>
+
+      <!-- Provision result card -->
+      <div class="provision-result" *ngIf="provisionResult()">
+        <div class="pr-header">
+          <svg class="pr-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="pr-title">Acceso al panel de administración</span>
+        </div>
+        <div class="pr-row">
+          <span class="pr-label">URL del admin</span>
+          <span class="pr-val pr-mono">{{ provisionResult()!.adminUrl }}</span>
+        </div>
+        <div class="pr-row">
+          <span class="pr-label">Email de acceso</span>
+          <span class="pr-val">{{ provisionResult()!.adminEmail }}</span>
+        </div>
+        <div class="pr-row">
+          <span class="pr-label">Tenant slug</span>
+          <span class="pr-val pr-mono">{{ provisionResult()!.slug }}</span>
+        </div>
+        <div class="pr-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          El admin debe usar "Olvidé mi contraseña" en Firebase para establecer su clave de acceso.
+        </div>
       </div>
     </div>
   </div>
 
   <div class="panel-footer" *ngIf="createSteps().length === 0">
     <button class="btn-primary" (click)="submitCreate()"
-            [disabled]="createLoading() || !createForm.slug || !createForm.name">
+            [disabled]="createLoading() || !createForm.slug || !createForm.name || !createForm.adminEmail || !createForm.adminFullName">
       <span class="spinner spinner--dark" *ngIf="createLoading()"></span>
-      <span *ngIf="!createLoading()">Crear tenant</span>
+      <span *ngIf="!createLoading()">Crear y provisionar tenant</span>
     </button>
     <button class="btn-cancel" (click)="closeCreate()">Cancelar</button>
   </div>

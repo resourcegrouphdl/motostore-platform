@@ -32,4 +32,16 @@ export class TenantService {
   activateTenant(id: string): Observable<Tenant> {
     return this.http.patch<Tenant>(`${this.base}/tenants/${id}/activate`, {});
   }
+
+  provisionTenant(id: string, adminEmail: string, adminFullName: string): Observable<ProvisionResult> {
+    return this.http.post<ProvisionResult>(`${this.base}/tenants/${id}/provision`, { adminEmail, adminFullName });
+  }
+}
+
+export interface ProvisionResult {
+  success:    boolean;
+  slug:       string;
+  schema:     string;
+  adminEmail: string;
+  adminUrl:   string;
 }
